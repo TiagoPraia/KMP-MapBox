@@ -9,5 +9,4 @@ actual fun Map(
     vm: MapViewModel,
     modifier: Modifier,
 ) {
-
 }

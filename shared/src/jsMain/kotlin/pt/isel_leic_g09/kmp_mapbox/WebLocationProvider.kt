@@ -1,11 +1,9 @@
 package pt.isel_leic_g09.kmp_mapbox
 
 import dev.jordond.compass.Location
-import dev.jordond.compass.Priority
-import dev.jordond.compass.geolocation.LocationRequest
 import kotlinx.coroutines.flow.Flow
 
-class WebLocationProvider: LocationProvider {
+class WebLocationProvider : LocationProvider {
     override val locationUpdates: Flow<Location> = TODO("Not yet implemented")
 
     override suspend fun startTracking() {
