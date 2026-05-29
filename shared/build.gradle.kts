@@ -11,11 +11,15 @@ plugins {
 
 kotlin {
     js {
-        browser()
+        browser {
+            testTask {
+                enabled = false
+            }
+        }
     }
 
     androidLibrary {
-        namespace = "pt.isel.leic.g09.kmp.mapbox.shared"
+        namespace = "pt.isel.leic.g26.kmp.mapbox.shared"
         compileSdk =
             libs.versions.android.compileSdk
                 .get()
@@ -64,6 +68,10 @@ kotlin {
             implementation(libs.wrappers.browser)
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "pt.isel.leic.g26.kmp.mapbox"
 }
 
 dependencies {
