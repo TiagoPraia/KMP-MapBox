@@ -33,11 +33,11 @@ dependencies {
 }
 
 android {
-    namespace = "pt.isel.leic.g26.kmp.mapbox"
+    namespace = "io.github.tiagopraia.kmp.mapbox"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "pt.isel.leic.g26.kmp.mapbox"
+        applicationId = "io.github.tiagopraia.kmp.mapbox"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

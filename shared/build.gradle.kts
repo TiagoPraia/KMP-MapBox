@@ -7,7 +7,12 @@ plugins {
     alias(libs.plugins.composeCompiler)
 
     alias(libs.plugins.ktlint)
+
+    alias(libs.plugins.maven.publish)
 }
+
+group = "io.github.tiagopraia"
+version = "0.1.0"
 
 kotlin {
     js {
@@ -19,7 +24,7 @@ kotlin {
     }
 
     androidLibrary {
-        namespace = "pt.isel.leic.g26.kmp.mapbox.shared"
+        namespace = "io.github.tiagopraia.kmp.mapbox.shared"
         compileSdk =
             libs.versions.android.compileSdk
                 .get()
@@ -71,9 +76,42 @@ kotlin {
 }
 
 compose.resources {
-    packageOfResClass = "pt.isel.leic.g26.kmp.mapbox"
+    packageOfResClass = "io.github.tiagopraia.kmp.mapbox"
 }
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+
+    signAllPublications()
+
+    coordinates(group.toString(), "kmp-mapbox", version.toString())
+
+    pom {
+        name = "KMP MapBox library"
+        description = "A KMP library based on MapBox Android and JS implementations."
+        inceptionYear = "2026"
+        url = "https://github.com/TiagoPraia/KMP-MapBox"
+        licenses {
+            license {
+                name = "The MIT License"
+                url = "https://opensource.org/licenses/MIT"
+            }
+        }
+        developers {
+            developer {
+                id = "TiagoPraia"
+                name = "Tiago Praia"
+                url = "https://github.com/TiagoPraia"
+            }
+        }
+        scm {
+            url = "https://github.com/TiagoPraia/KMP-MapBox"
+            connection = "scm:git:git://github.com/TiagoPraia/KMP-MapBox.git"
+            developerConnection = "scm:git:ssh://git@github.com:TiagoPraia/KMP-MapBox.git"
+        }
+    }
 }
