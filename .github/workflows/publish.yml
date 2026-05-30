@@ -17,8 +17,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Publish to MavenCentral
-        run: bash gradlew :shared:publishAndReleaseToMavenCentral --no-configuration-cache
+        run: bash gradlew :shared:publishToMavenCentral --no-configuration-cache
         env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
