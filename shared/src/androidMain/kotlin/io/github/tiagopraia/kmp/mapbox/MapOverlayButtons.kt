@@ -21,7 +21,6 @@ internal fun BoxScope.MapOverlayButtons(
 ) {
     if (config.followButton.showFollowButton) {
         FollowButton(
-            isFollowing = vm.camera.followUser,
             config = config.followButton,
             onClick = { vm.camera.resumeFollowing() },
         )
@@ -44,19 +43,13 @@ internal fun BoxScope.MapOverlayButtons(
 
 @Composable
 fun BoxScope.FollowButton(
-    isFollowing: Boolean,
     config: FollowButtonConfig,
     onClick: () -> Unit,
 ) {
     FloatingActionButton(
         onClick = onClick,
         shape = config.buttonShape,
-        containerColor =
-            if (isFollowing) {
-                config.followButtonActiveColor
-            } else {
-                config.followButtonInactiveColor
-            },
+        containerColor = config.followButtonColor,
         modifier =
             Modifier
                 .align(config.buttonAlignment)

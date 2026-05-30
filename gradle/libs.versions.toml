@@ -13,6 +13,7 @@ composeMultiplatform = "1.11.0"
 junit = "4.13.2"
 kotlin = "2.3.21"
 kotlin-wrappers = "2026.5.3"
+compose-html = "1.11.0"
 material3 = "1.4.0"
 material-icons = "1.7.3"
 mapbox = "11.9.0"
@@ -40,6 +41,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 wrappers-browser = { module = "org.jetbrains.kotlin-wrappers:kotlin-browser", version.ref = "kotlin-wrappers" }
+compose-html = { module = "org.jetbrains.compose.html:html-core", version.ref = "compose-html" }
 mapbox-maps-android = { module = "com.mapbox.maps:android", version.ref = "mapbox" }
 compass-geolocation-generic = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
 compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }

@@ -14,6 +14,5 @@ data class FollowButtonConfig(
     val buttonModifier: Modifier = Modifier.padding(16.dp).size(40.dp),
     val buttonAlignment: Alignment = Alignment.BottomEnd,
     val buttonShape: Shape = CircleShape,
-    val followButtonActiveColor: Color = LightBlue,
-    val followButtonInactiveColor: Color = Color.LightGray,
+    val followButtonColor: Color = Color.White,
 )

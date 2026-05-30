@@ -1,9 +1,14 @@
 package io.github.tiagopraia.kmp.mapbox
 
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.window.ComposeViewport
+import androidx.compose.runtime.remember
+import org.jetbrains.compose.web.renderComposable
 
-@OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    ComposeViewport { }
+    renderComposable(rootElementId = "root") {
+        val vm = remember { MapViewModel() }
+        Map(
+            accessToken = "MY_TOKEN",
+            vm = vm,
+        )
+    }
 }

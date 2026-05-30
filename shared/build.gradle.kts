@@ -71,6 +71,8 @@ kotlin {
         }
         jsMain.dependencies {
             implementation(libs.wrappers.browser)
+            implementation(libs.compose.html)
+            implementation(npm("mapbox-gl", "3.9.4"))
         }
     }
 }
