@@ -1,7 +1,5 @@
 name: Publish
 on:
-  push:
-    branches: [main]
   release:
     types: [released]
 jobs:
@@ -19,7 +17,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Publish to MavenCentral
-        run: bash gradlew :shared:publishAndReleaseToMavenCentral --no-configuration-cache --dry-run
+        run: bash gradlew :shared:publishAndReleaseToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
