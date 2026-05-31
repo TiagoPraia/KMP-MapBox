@@ -1,5 +1,6 @@
 package io.github.tiagopraia.kmp.mapbox
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import io.github.tiagopraia.kmp.mapbox.configs.MapConfig
@@ -10,5 +11,5 @@ expect fun Map(
     vm: MapViewModel,
     config: MapConfig = MapConfig(),
     extraOverlays: List<MapOverlayAction> = emptyList(),
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxSize(),
 )
