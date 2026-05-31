@@ -50,7 +50,6 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.mapbox.maps.android)
             implementation(libs.compass.geolocation.mobile)
-            implementation(libs.compose.material3)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
