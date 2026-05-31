@@ -7,7 +7,7 @@ fun main() {
     renderComposable(rootElementId = "root") {
         val vm = remember { MapViewModel() }
         Map(
-            accessToken = "MY_TOKEN",
+            accessToken = BuildKonfig.MAPBOX_ACCESS_TOKEN,
             vm = vm,
         )
     }

@@ -21,6 +21,7 @@ compass = "3.0.2"
 kermit-ref = "2.0.4"
 ktlint = "14.2.0"
 maven-publish = "0.36.0"
+build-konfig = "0.21.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -57,3 +58,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+build-konfig = { id = "com.codingfeline.buildkonfig", version.ref = "build-konfig" }

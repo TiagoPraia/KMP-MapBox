@@ -20,16 +20,29 @@ external object mapboxgl {
         options: dynamic,
     ) {
         fun remove()
+
         fun on(
             event: String,
             callback: () -> Unit,
         )
+
         @JsName("on")
-        fun onEvent(event: String, callback: (dynamic) -> Unit)
+        fun onEvent(
+            event: String,
+            callback: (dynamic) -> Unit,
+        )
+
         fun addControl(control: dynamic)
+
         fun resize()
-        fun addSource(id: String, source: dynamic)
+
+        fun addSource(
+            id: String,
+            source: dynamic,
+        )
+
         fun addLayer(layer: dynamic)
+
         fun getSource(id: String): dynamic
     }
 
@@ -216,7 +229,10 @@ private fun WebButton(
 }
 
 @Composable
-fun WebOverlayButtons(vm: MapViewModel, config: MapConfig) {
+fun WebOverlayButtons(
+    vm: MapViewModel,
+    config: MapConfig,
+) {
     if (vm.route.isDrawingMode) {
         Div(attrs = {
             style {
@@ -233,11 +249,17 @@ fun WebOverlayButtons(vm: MapViewModel, config: MapConfig) {
                 if (vm.route.canUndo) {
                     org.jetbrains.compose.web.dom.Span(attrs = {
                         classes("material-icons")
-                    }) { org.jetbrains.compose.web.dom.Text("delete") }
+                    }) {
+                        org.jetbrains.compose.web.dom
+                            .Text("delete")
+                    }
                 } else {
                     org.jetbrains.compose.web.dom.Span(attrs = {
                         classes("material-icons")
-                    }) { org.jetbrains.compose.web.dom.Text("close") }
+                    }) {
+                        org.jetbrains.compose.web.dom
+                            .Text("close")
+                    }
                 }
             }
             WebButton(
@@ -247,15 +269,21 @@ fun WebOverlayButtons(vm: MapViewModel, config: MapConfig) {
             ) {
                 org.jetbrains.compose.web.dom.Span(attrs = {
                     classes("material-icons")
-                }) { org.jetbrains.compose.web.dom.Text("undo") }
+                }) {
+                    org.jetbrains.compose.web.dom
+                        .Text("undo")
+                }
             }
             WebButton(
                 onClick = { vm.route.complete() },
-                backgroundColor = if (vm.route.canComplete) ColorJs.BLUE.hex else ColorJs.GRAY.hex
+                backgroundColor = if (vm.route.canComplete) ColorJs.BLUE.hex else ColorJs.GRAY.hex,
             ) {
                 org.jetbrains.compose.web.dom.Span(attrs = {
                     classes("material-icons")
-                }) { org.jetbrains.compose.web.dom.Text("check") }
+                }) {
+                    org.jetbrains.compose.web.dom
+                        .Text("check")
+                }
             }
         }
     } else if (config.drawRouteConfig.showCreationButton) {
@@ -270,7 +298,10 @@ fun WebOverlayButtons(vm: MapViewModel, config: MapConfig) {
             WebButton(onClick = { vm.route.startNewRoute() }, textColor = ColorJs.BLACK.hex) {
                 org.jetbrains.compose.web.dom.Span(attrs = {
                     classes("material-icons")
-                }) { org.jetbrains.compose.web.dom.Text("add") }
+                }) {
+                    org.jetbrains.compose.web.dom
+                        .Text("add")
+                }
             }
         }
     }
@@ -329,17 +360,19 @@ private fun lineLayer(
 }
 
 private fun buildRouteFeatureCollection(points: List<GeoPoint>): dynamic {
-    val features = points.mapIndexed { _, point ->
-        val coords = arrayOf(point.longitude, point.latitude)
-        val geometry = js("{}")
-        geometry["type"] = "Point"
-        geometry["coordinates"] = coords
-        val feature = js("{}")
-        feature["type"] = "Feature"
-        feature["geometry"] = geometry
-        feature["properties"] = js("{}")
-        feature
-    }.toTypedArray()
+    val features =
+        points
+            .mapIndexed { _, point ->
+                val coords = arrayOf(point.longitude, point.latitude)
+                val geometry = js("{}")
+                geometry["type"] = "Point"
+                geometry["coordinates"] = coords
+                val feature = js("{}")
+                feature["type"] = "Feature"
+                feature["geometry"] = geometry
+                feature["properties"] = js("{}")
+                feature
+            }.toTypedArray()
 
     val collection = js("{}")
     collection["type"] = "FeatureCollection"
@@ -367,10 +400,12 @@ private fun buildLineFeatureCollection(points: List<GeoPoint>): dynamic {
     return collection
 }
 
-private fun sourceExists(map: mapboxgl.Map, id: String): Boolean {
-    return try {
+private fun sourceExists(
+    map: mapboxgl.Map,
+    id: String,
+): Boolean =
+    try {
         map.getSource(id) != null
     } catch (_: Throwable) {
         false
     }
-}

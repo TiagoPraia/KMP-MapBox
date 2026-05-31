@@ -1,6 +1,8 @@
 package io.github.tiagopraia.kmp.mapbox
 
-enum class ColorJs(val hex: String) {
+enum class ColorJs(
+    val hex: String,
+) {
     BLUE("#1A73E8"),
     RED("#D32F2F"),
     WHITE("#FFFFFF"),

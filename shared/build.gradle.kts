@@ -15,7 +15,7 @@ group = "io.github.tiagopraia"
 version = "0.2.0"
 
 kotlin {
-    js {
+    js(IR) {
         browser {
             testTask {
                 enabled = false

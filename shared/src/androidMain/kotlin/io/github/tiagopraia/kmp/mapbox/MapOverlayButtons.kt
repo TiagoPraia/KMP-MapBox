@@ -2,8 +2,6 @@ package io.github.tiagopraia.kmp.mapbox
 
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -56,8 +54,8 @@ fun BoxScope.FollowButton(
                 .then(config.buttonModifier),
     ) {
         Icon(
-            imageVector = Icons.Filled.Explore,
-            contentDescription = "Explore",
+            imageVector = config.buttonImage,
+            contentDescription = "Follow location",
         )
     }
 }
