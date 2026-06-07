@@ -38,8 +38,13 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.shared)
-            implementation(libs.compose.html)
+            implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
+            implementation(libs.kermit)
+        }
+        jsMain.dependencies {
+            implementation(libs.compose.html)
+            implementation(npm("mapbox-gl", "3.9.4"))
         }
     }
 }

@@ -49,7 +49,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.mapbox.maps.android)
-            implementation(libs.compass.geolocation.mobile)
+            implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -60,16 +60,12 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.compass.geolocation.generic)
             implementation(libs.kermit)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         jsMain.dependencies {
-            implementation(libs.wrappers.browser)
             implementation(libs.compose.html)
             implementation(npm("mapbox-gl", "3.9.4"))
         }
