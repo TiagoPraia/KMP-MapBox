@@ -1,6 +1,7 @@
 package io.github.tiagopraia.kmp.mapbox
 
 import android.content.Context
+import android.view.Gravity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -328,67 +329,112 @@ private fun buildMapView(
     MapboxOptions.accessToken = accessToken
 
     return MapView(context).apply {
-        if (initialCameraMode == CameraTrackingMode.FREE && savedLat != null && savedLng != null) {
-            mapboxMap.setCamera(
-                CameraOptions
-                    .Builder()
-                    .center(Point.fromLngLat(savedLng, savedLat))
-                    .zoom(savedZoom)
-                    .pitch(0.0)
-                    .build(),
-            )
-        }
+        restoreFreeCameraIfNeeded(mapboxMap, initialCameraMode, savedZoom, savedLat, savedLng)
 
         mapboxMap.loadStyle(config.styleUri) { style ->
-            compass.updateSettings {
-                clickable = false
-                // enabled = false
-            }
-            location.updateSettings {
-                enabled = isGpsEnabled
-                pulsingEnabled = config.locationPulseAnimation
-                showAccuracyRing = config.showAccuracyRing
-                locationPuck = createDefault2DPuck(withBearing = true)
-                puckBearing = PuckBearing.HEADING
-                puckBearingEnabled = true
-            }
-
-            if (initialCameraMode != CameraTrackingMode.FREE) {
-                restoreTrackingMode(initialCameraMode, savedZoom)
-            } else if (savedLat != null && savedLng != null) {
-                mapboxMap.setCamera(
-                    CameraOptions
-                        .Builder()
-                        .center(Point.fromLngLat(savedLng, savedLat))
-                        .zoom(savedZoom)
-                        .pitch(0.0)
-                        .build(),
-                )
-            }
-
-            viewport.addStatusObserver { _, to, reason ->
-                if (to == ViewportStatus.Idle &&
-                    reason == ViewportStatusChangeReason.USER_INTERACTION
-                ) {
-                    onUserInteraction()
-                }
-            }
-
-            mapboxMap.subscribeCameraChanged { _ ->
-                val currentState = mapboxMap.cameraState
-                onCameraPositionChanged(
-                    currentState.zoom,
-                    currentState.center.latitude(),
-                    currentState.center.longitude(),
-                )
-            }
-
-            initOverlayLayers(style, config)
-            updateCirclesSource(style, overlaysRef.circles)
-            updatePolylinesSource(style, overlaysRef.polylines)
+            setupCompass(config)
+            setupLocation(isGpsEnabled, config)
+            setupCamera(initialCameraMode, savedZoom, savedLat, savedLng)
+            setupViewportObserver(onUserInteraction)
+            setupCameraChangeListener(onCameraPositionChanged)
+            setupOverlays(style, overlaysRef, config)
             onMapReady()
         }
+
         registerGestureListeners(mapboxMap, onMapClick, onOverlayClick)
+    }
+}
+
+private fun MapView.setupCompass(config: MapConfig) {
+    compass.updateSettings {
+        clickable = false
+        position = if (config.compassPosition != -1) config.compassPosition else Gravity.START
+        marginLeft = config.compassMarginLeft
+
+        if (config.compassMarginTop != -1f) marginTop = config.compassMarginTop
+        if (config.compassMarginRight != -1f) marginRight = config.compassMarginRight
+        if (config.compassMarginBottom != -1f) marginBottom = config.compassMarginBottom
+        // enabled = false
+    }
+}
+
+private fun MapView.setupLocation(
+    isGpsEnabled: Boolean,
+    config: MapConfig,
+) {
+    location.updateSettings {
+        enabled = isGpsEnabled
+        pulsingEnabled = config.locationPulseAnimation
+        showAccuracyRing = config.showAccuracyRing
+        locationPuck = createDefault2DPuck(withBearing = true)
+        puckBearing = PuckBearing.HEADING
+        puckBearingEnabled = true
+    }
+}
+
+private fun MapView.setupCamera(
+    initialCameraMode: CameraTrackingMode,
+    savedZoom: Double,
+    savedLat: Double?,
+    savedLng: Double?,
+) {
+    if (initialCameraMode != CameraTrackingMode.FREE) {
+        restoreTrackingMode(initialCameraMode, savedZoom)
+    } else if (savedLat != null && savedLng != null) {
+        mapboxMap.setCamera(
+            CameraOptions
+                .Builder()
+                .center(Point.fromLngLat(savedLng, savedLat))
+                .zoom(savedZoom)
+                .pitch(0.0)
+                .build(),
+        )
+    }
+}
+
+private fun MapView.setupViewportObserver(onUserInteraction: () -> Unit) {
+    viewport.addStatusObserver { _, to, reason ->
+        if (to == ViewportStatus.Idle &&
+            reason == ViewportStatusChangeReason.USER_INTERACTION
+        ) {
+            onUserInteraction()
+        }
+    }
+}
+
+private fun MapView.setupCameraChangeListener(onCameraPositionChanged: (Double, Double, Double) -> Unit) {
+    mapboxMap.subscribeCameraChanged {
+        val state = mapboxMap.cameraState
+        onCameraPositionChanged(state.zoom, state.center.latitude(), state.center.longitude())
+    }
+}
+
+private fun setupOverlays(
+    style: Style,
+    overlaysRef: MapOverlays,
+    config: MapConfig,
+) {
+    initOverlayLayers(style, config)
+    updateCirclesSource(style, overlaysRef.circles)
+    updatePolylinesSource(style, overlaysRef.polylines)
+}
+
+private fun restoreFreeCameraIfNeeded(
+    mapboxMap: MapboxMap,
+    initialCameraMode: CameraTrackingMode,
+    savedZoom: Double,
+    savedLat: Double?,
+    savedLng: Double?,
+) {
+    if (initialCameraMode == CameraTrackingMode.FREE && savedLat != null && savedLng != null) {
+        mapboxMap.setCamera(
+            CameraOptions
+                .Builder()
+                .center(Point.fromLngLat(savedLng, savedLat))
+                .zoom(savedZoom)
+                .pitch(0.0)
+                .build(),
+        )
     }
 }
 
