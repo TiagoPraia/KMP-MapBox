@@ -1,4 +1,4 @@
-package io.github.tiagopraia.kmp.mapbox
+package io.github.tiagopraia.kmp.mapbox.map
 
 import android.content.Context
 import android.view.Gravity
@@ -57,16 +57,27 @@ import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateBearing
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateOptions
 import com.mapbox.maps.plugin.viewport.data.ViewportStatusChangeReason
 import com.mapbox.maps.plugin.viewport.viewport
+import io.github.tiagopraia.kmp.mapbox.CIRCLES_LAYER_ID
+import io.github.tiagopraia.kmp.mapbox.CIRCLES_SOURCE_ID
+import io.github.tiagopraia.kmp.mapbox.CameraTrackingMode
+import io.github.tiagopraia.kmp.mapbox.GeoPoint
+import io.github.tiagopraia.kmp.mapbox.NORTH
+import io.github.tiagopraia.kmp.mapbox.POLYLINES_DASHED_LAYER_ID
+import io.github.tiagopraia.kmp.mapbox.POLYLINES_SOLID_LAYER_ID
+import io.github.tiagopraia.kmp.mapbox.POLYLINES_SOURCE_ID
+import io.github.tiagopraia.kmp.mapbox.PROP_COLOR
+import io.github.tiagopraia.kmp.mapbox.PROP_IS_CLICKABLE
+import io.github.tiagopraia.kmp.mapbox.PROP_IS_DASHED
+import io.github.tiagopraia.kmp.mapbox.PROP_OVERLAY_ID
+import io.github.tiagopraia.kmp.mapbox.config.AndroidMapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.CircleOverlay
-import io.github.tiagopraia.kmp.mapbox.configs.FollowButtonConfig
-import io.github.tiagopraia.kmp.mapbox.configs.MapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.MapOverlays
 import io.github.tiagopraia.kmp.mapbox.configs.PolylineOverlay
 
 @Composable
 fun AndroidMap(
     accessToken: String,
-    config: MapConfig,
+    config: AndroidMapConfig,
     overlays: MapOverlays,
     onOverlayClick: (id: String) -> Unit,
     onMapReady: () -> Unit,
@@ -129,7 +140,7 @@ fun AndroidMap(
                 mapViewRef = mapViewRef.value,
                 cameraMode = cameraMode,
                 onModeChanged = { cameraMode = it },
-                config = config.followButton,
+                config = config,
             )
         }
     }
@@ -140,7 +151,7 @@ fun BoxScope.FollowButton(
     mapViewRef: MapView?,
     cameraMode: CameraTrackingMode,
     onModeChanged: (CameraTrackingMode) -> Unit,
-    config: FollowButtonConfig,
+    config: AndroidMapConfig,
 ) {
     FloatingActionButton(
         onClick = {
@@ -157,7 +168,7 @@ fun BoxScope.FollowButton(
                 val transitionOptions =
                     DefaultViewportTransitionOptions
                         .Builder()
-                        .maxDurationMs(800)
+                        .maxDurationMs(config.animationDuration)
                         .build()
 
                 val bearingConfig =
@@ -185,12 +196,12 @@ fun BoxScope.FollowButton(
                 onModeChanged(nextMode)
             }
         },
-        shape = config.buttonShape,
-        containerColor = config.followButtonColor,
+        shape = config.followButton.buttonShape,
+        containerColor = config.followButton.followButtonColor,
         modifier =
             Modifier
                 .align(Alignment.BottomEnd)
-                .then(config.buttonModifier),
+                .then(config.followButton.buttonModifier),
     ) {
         Logger.i("Camera Mode: $cameraMode")
         Icon(
@@ -258,7 +269,7 @@ private fun updatePolylinesSource(
 
 private fun initOverlayLayers(
     style: Style,
-    config: MapConfig,
+    config: AndroidMapConfig,
 ) {
     style.addSource(
         geoJsonSource(CIRCLES_SOURCE_ID) {
@@ -314,7 +325,7 @@ private fun buildMapView(
     context: Context,
     accessToken: String,
     overlaysRef: MapOverlays,
-    config: MapConfig,
+    config: AndroidMapConfig,
     isGpsEnabled: Boolean,
     initialCameraMode: CameraTrackingMode,
     savedZoom: Double,
@@ -345,7 +356,7 @@ private fun buildMapView(
     }
 }
 
-private fun MapView.setupCompass(config: MapConfig) {
+private fun MapView.setupCompass(config: AndroidMapConfig) {
     compass.updateSettings {
         clickable = false
         position = if (config.compassPosition != -1) config.compassPosition else Gravity.START
@@ -360,7 +371,7 @@ private fun MapView.setupCompass(config: MapConfig) {
 
 private fun MapView.setupLocation(
     isGpsEnabled: Boolean,
-    config: MapConfig,
+    config: AndroidMapConfig,
 ) {
     location.updateSettings {
         enabled = isGpsEnabled
@@ -412,7 +423,7 @@ private fun MapView.setupCameraChangeListener(onCameraPositionChanged: (Double, 
 private fun setupOverlays(
     style: Style,
     overlaysRef: MapOverlays,
-    config: MapConfig,
+    config: AndroidMapConfig,
 ) {
     initOverlayLayers(style, config)
     updateCirclesSource(style, overlaysRef.circles)

@@ -1,6 +1,8 @@
-package io.github.tiagopraia.kmp.mapbox.configs
+package io.github.tiagopraia.kmp.mapbox.config
 
-data class MapConfig(
+import io.github.tiagopraia.kmp.mapbox.configs.MapStyle
+
+data class AndroidMapConfig(
     val initialZoom: Double = 17.0,
     val animationDuration: Long = 1000,
     val styleUri: String = MapStyle.OUTDOORS,

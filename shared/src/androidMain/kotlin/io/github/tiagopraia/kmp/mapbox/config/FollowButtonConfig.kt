@@ -1,4 +1,4 @@
-package io.github.tiagopraia.kmp.mapbox.configs
+package io.github.tiagopraia.kmp.mapbox.config
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size

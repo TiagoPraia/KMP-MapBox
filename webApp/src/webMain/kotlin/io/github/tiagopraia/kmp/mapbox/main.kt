@@ -1,6 +1,5 @@
 package io.github.tiagopraia.kmp.mapbox
 
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document

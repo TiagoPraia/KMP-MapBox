@@ -7,31 +7,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.HtmlElementView
+import co.touchlab.kermit.Logger
 import io.github.tiagopraia.kmp.mapbox.configs.CircleOverlay
-import io.github.tiagopraia.kmp.mapbox.configs.MapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.MapOverlays
 import io.github.tiagopraia.kmp.mapbox.configs.PolylineOverlay
 import kotlinx.browser.document
 import kotlinx.browser.window
-import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLLinkElement
-import org.w3c.dom.HTMLSpanElement
 import org.w3c.dom.HTMLStyleElement
 
-private const val BUTTON_SIZE = "48px"
-private const val BUTTON_RADIUS = "8px"
-private const val BUTTON_SHADOW = "0 2px 6px rgba(0,0,0,0.3)"
-private const val BUTTON_MARGIN = "16px"
-private const val BUTTON_GAP = "8px"
-private const val BUTTON_ICON_SIZE = "24px"
-
-private const val COLOR_WHITE = "#FFFFFF"
-private const val COLOR_GRAY = "#BDBDBD"
-private const val COLOR_RED = "#F44336"
-private const val COLOR_BLUE = "#29B6F6"
-private const val COLOR_ICON_DARK = "#333333"
-private const val COLOR_ICON_LIGHT = "#FFFFFF"
+const val BUTTON_SIZE = "48px"
+const val BUTTON_RADIUS = "8px"
+const val BUTTON_SHADOW = "0 2px 6px rgba(0,0,0,0.3)"
+const val BUTTON_MARGIN = "16px"
+const val BUTTON_ICON_SIZE = "24px"
 
 @JsModule("mapbox-gl")
 @JsNonModule
@@ -80,12 +71,11 @@ external object MapBox {
         options: dynamic,
     ) {
         fun trigger()
-
-        fun on(
-            event: String,
-            callback: (dynamic) -> Unit,
-        )
     }
+
+    open class AttributionControl(
+        options: dynamic = definedExternally,
+    )
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -93,14 +83,13 @@ external object MapBox {
 fun WebMap(
     accessToken: String,
     overlays: MapOverlays,
-    config: MapConfig,
-    onMapReady: () -> Unit,
+    config: WebMapConfig,
     onMapClick: ((GeoPoint) -> Boolean)?,
     onOverlayClick: (id: String) -> Unit,
-    buttonState: MapButtonState?,
+    extraHTML: List<HTMLElement>,
     modifier: Modifier,
 ) {
-    val mapId = remember { "mapbox-${(0..99999).random()}" }
+    val mapId = "mapbox"
     val mapRef = remember { mutableStateOf<MapBox.Map?>(null) }
     val isStyleReady = remember { mutableStateOf(false) }
     val overlaysRef = remember { mutableStateOf(overlays) }
@@ -130,12 +119,12 @@ fun WebMap(
             mapDiv.style.height = "100%"
             container.appendChild(mapDiv)
 
-            val buttonsDiv = document.createElement("div") as HTMLDivElement
-            buttonsDiv.id = "$mapId-buttons"
-            buttonsDiv.style.position = "absolute"
-            buttonsDiv.style.asDynamic().inset = "0"
-            buttonsDiv.style.asDynamic().pointerEvents = "none"
-            container.appendChild(buttonsDiv)
+            val extraDiv = document.createElement("div") as HTMLDivElement
+            extraDiv.id = "$mapId-extra"
+            extraDiv.style.position = "absolute"
+            extraDiv.style.asDynamic().inset = "0"
+            extraDiv.style.asDynamic().pointerEvents = "none"
+            container.appendChild(extraDiv)
 
             container
         },
@@ -145,13 +134,13 @@ fun WebMap(
             isStyleReady.value = false
         },
         update = { container ->
-            val buttonsDiv = container.querySelector("#$mapId-buttons") as? HTMLDivElement
-            if (buttonsDiv != null && buttonState != null) {
-                buttonsDiv.innerHTML = ""
-                buildOverlayButtons(
-                    container = buttonsDiv,
-                    buttonState = buttonState,
-                )
+            val extraDiv = container.querySelector("#$mapId-extra") as? HTMLDivElement
+            if (extraDiv != null) {
+                extraDiv.innerHTML = ""
+                extraHTML.forEach { element ->
+                    element.style.asDynamic().pointerEvents = "auto"
+                    extraDiv.appendChild(element)
+                }
             }
 
             if (mapRef.value != null) return@HtmlElementView
@@ -162,27 +151,32 @@ fun WebMap(
             options.container = mapId
             options.style = config.styleUri
             options.zoom = config.initialZoom
+            options.attributionControl = false
 
             val map = MapBox.Map(options)
+            val attrOptions = js("{}")
+            attrOptions.compact = true
+            map.addControl(MapBox.AttributionControl(attrOptions), WebFollowButtonPosition.TOP_LEFT.mapboxPosition)
 
             map.on("load") {
-                injectMapboxGeolocateStyle()
+                injectMapboxGeolocateStyle(config.followButton)
 
                 val geolocateOptions = js("{}")
                 geolocateOptions.positionOptions = js("{}")
-                geolocateOptions.positionOptions.enableHighAccuracy = true
-                geolocateOptions.trackUserLocation = true
-                geolocateOptions.showUserHeading = true
+                geolocateOptions.positionOptions.enableHighAccuracy = config.enableHighAccuracy
+                geolocateOptions.trackUserLocation = config.trackUserLocation
+                geolocateOptions.showUserHeading = config.showUserHeading
                 geolocateOptions.showAccuracyCircle = config.showAccuracyRing
                 geolocateOptions.fitBoundsOptions = js("{}")
                 geolocateOptions.fitBoundsOptions.maxZoom = config.initialZoom
+                geolocateOptions.fitBoundsOptions.duration = config.animationDuration
 
+                val followPosition =
+                    config.followButton?.position?.mapboxPosition
+                        ?: WebFollowButtonPosition.BOTTOM_RIGHT.mapboxPosition
                 val geolocate = MapBox.GeolocateControl(geolocateOptions)
-                map.addControl(geolocate, "bottom-right")
-                window.requestAnimationFrame {
-                    geolocate.trigger()
-                }
-                geolocate.on("add") { geolocate.trigger() }
+                map.addControl(geolocate, followPosition)
+                window.requestAnimationFrame { geolocate.trigger() }
 
                 map.resize()
 
@@ -190,7 +184,6 @@ fun WebMap(
                 updateWebCirclesSource(map, overlaysRef.value.circles)
                 updateWebPolylinesSource(map, overlaysRef.value.polylines)
                 isStyleReady.value = true
-                onMapReady()
             }
 
             map.onEvent("click") { e ->
@@ -225,111 +218,6 @@ fun WebMap(
     )
 }
 
-private fun buildOverlayButtons(
-    container: HTMLDivElement,
-    buttonState: MapButtonState,
-) {
-    buttonState.onProfileClick?.let { container.appendChild(buildProfileButton(it)) }
-    buttonState.onTrailsClick?.let { container.appendChild(buildTrailsButton(it)) }
-    container.appendChild(buildDrawingColumn(buttonState))
-}
-
-private fun buildProfileButton(onClick: () -> Unit): HTMLButtonElement =
-    buildFab(COLOR_WHITE, "person", onClick).apply {
-        style.position = "absolute"
-        style.top = BUTTON_MARGIN
-        style.right = BUTTON_MARGIN
-        style.asDynamic().pointerEvents = "auto"
-    }
-
-private fun buildTrailsButton(onClick: () -> Unit): HTMLButtonElement =
-    buildFab(COLOR_WHITE, "route", onClick).apply {
-        style.position = "absolute"
-        style.bottom = BUTTON_MARGIN
-        style.left = "calc($BUTTON_MARGIN + $BUTTON_SIZE + $BUTTON_GAP)"
-        style.asDynamic().pointerEvents = "auto"
-    }
-
-private fun buildDrawingColumn(buttonState: MapButtonState): HTMLDivElement {
-    val column = document.createElement("div") as HTMLDivElement
-    column.style.position = "absolute"
-    column.style.bottom = BUTTON_MARGIN
-    column.style.left = BUTTON_MARGIN
-    column.style.display = "flex"
-    column.style.asDynamic().flexDirection = "column"
-    column.style.asDynamic().gap = BUTTON_GAP
-    column.style.asDynamic().pointerEvents = "auto"
-
-    if (buttonState.isDrawingMode) {
-        buttonState.onCancel?.let {
-            column.appendChild(buildCancelButton(it, buttonState.canUndo))
-        }
-        buttonState.onUndo?.let {
-            column.appendChild(buildUndoButton(it, buttonState.canUndo))
-        }
-        buttonState.onComplete?.let {
-            column.appendChild(buildCompleteButton(it, buttonState.canComplete))
-        }
-    } else {
-        buttonState.onStartRoute?.let {
-            column.appendChild(buildCreateButton(it))
-        }
-    }
-
-    return column
-}
-
-private fun buildCreateButton(onClick: () -> Unit): HTMLButtonElement = buildFab(COLOR_WHITE, "add", onClick)
-
-private fun buildCancelButton(
-    onClick: () -> Unit,
-    canUndo: Boolean,
-): HTMLButtonElement = buildFab(COLOR_RED, if (canUndo) "delete" else "close", onClick)
-
-private fun buildUndoButton(
-    onClick: () -> Unit,
-    canUndo: Boolean,
-): HTMLButtonElement = buildFab(if (canUndo) COLOR_WHITE else COLOR_GRAY, "undo", onClick)
-
-private fun buildCompleteButton(
-    onClick: () -> Unit,
-    canComplete: Boolean,
-): HTMLButtonElement = buildFab(if (canComplete) COLOR_BLUE else COLOR_GRAY, "check", onClick)
-
-private fun buildFab(
-    backgroundColor: String,
-    icon: String,
-    onClick: () -> Unit,
-): HTMLButtonElement {
-    val button = document.createElement("button") as HTMLButtonElement
-    button.style.width = BUTTON_SIZE
-    button.style.height = BUTTON_SIZE
-    button.style.borderRadius = BUTTON_RADIUS
-    button.style.backgroundColor = backgroundColor
-    button.style.border = "none"
-    button.style.cursor = "pointer"
-    button.style.display = "flex"
-    button.style.asDynamic().alignItems = "center"
-    button.style.asDynamic().justifyContent = "center"
-    button.style.asDynamic().boxShadow = BUTTON_SHADOW
-    button.style.asDynamic().flexShrink = "0"
-
-    val span = document.createElement("span") as HTMLSpanElement
-    span.className = "material-icons"
-    span.textContent = icon
-    span.style.fontSize = BUTTON_ICON_SIZE
-    span.style.color =
-        if (backgroundColor == COLOR_WHITE || backgroundColor == COLOR_GRAY) {
-            COLOR_ICON_DARK
-        } else {
-            COLOR_ICON_LIGHT
-        }
-    button.appendChild(span)
-
-    button.addEventListener("click") { onClick() }
-    return button
-}
-
 private fun injectMapboxCss() {
     if (document.getElementById("mapbox-gl-css") != null) return
     val link = document.createElement("link") as HTMLLinkElement
@@ -339,42 +227,55 @@ private fun injectMapboxCss() {
     document.head?.appendChild(link)
 }
 
-private fun injectMapboxGeolocateStyle() {
+private fun injectMapboxGeolocateStyle(followButton: WebFollowButtonConfig?) {
     if (document.getElementById("mapbox-geolocate-style") != null) return
     val style = document.createElement("style") as HTMLStyleElement
     style.id = "mapbox-geolocate-style"
-    style.textContent =
-        """
-        .mapboxgl-ctrl-geolocate {
-            width: $BUTTON_SIZE !important;
-            height: $BUTTON_SIZE !important;
-            border-radius: $BUTTON_RADIUS !important;
-            background-color: $COLOR_WHITE !important;
-            box-shadow: $BUTTON_SHADOW !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+
+    val a =
+        buildString {
+            append(".mapboxgl-ctrl-geolocate {")
+            followButton?.size?.let { append("width: $it !important; height: $it !important;") }
+            followButton?.borderRadius?.let { append("border-radius: $it !important;") }
+            followButton?.backgroundColor?.let { append("background-color: $it !important;") }
+            followButton?.shadow?.let { append("box-shadow: $it !important;") }
+            if (followButton?.size !=
+                null
+            ) {
+                append("display: flex !important; align-items: center !important; justify-content: center !important;")
+            }
+            append("}")
+
+            followButton?.iconSize?.let {
+                append(".mapboxgl-ctrl-geolocate .mapboxgl-ctrl-icon {")
+                append("width: $it !important; height: $it !important;")
+                append("}")
+            }
+
+            followButton?.margin?.let {
+                val positionClass =
+                    when (followButton.position) {
+                        WebFollowButtonPosition.TOP_LEFT -> ".mapboxgl-ctrl-top-left"
+                        WebFollowButtonPosition.TOP_RIGHT -> ".mapboxgl-ctrl-top-right"
+                        WebFollowButtonPosition.BOTTOM_LEFT -> ".mapboxgl-ctrl-bottom-left"
+                        WebFollowButtonPosition.BOTTOM_RIGHT -> ".mapboxgl-ctrl-bottom-right"
+                    }
+
+                append("$positionClass .mapboxgl-ctrl {")
+                append("margin: $it !important;")
+                followButton.borderRadius?.let { radius -> append("border-radius: $radius !important;") }
+                append("box-shadow: nono !important;")
+                append("}")
+            }
         }
-        .mapboxgl-ctrl-geolocate .mapboxgl-ctrl-icon {
-            width: $BUTTON_ICON_SIZE !important;
-            height: $BUTTON_ICON_SIZE !important;
-        }
-        .mapboxgl-ctrl-bottom-right {
-            bottom: $BUTTON_MARGIN !important;
-            right: $BUTTON_MARGIN !important;
-        }
-        .mapboxgl-ctrl-bottom-right .mapboxgl-ctrl {
-            margin: 0 !important;
-            border-radius: $BUTTON_RADIUS !important;
-            box-shadow: none !important;
-        }
-        """.trimIndent()
+    style.textContent = a
+    Logger.i(a)
     document.head?.appendChild(style)
 }
 
 private fun initWebOverlayLayers(
     map: MapBox.Map,
-    config: MapConfig,
+    config: WebMapConfig,
 ) {
     val emptyCollection = js("{}")
     emptyCollection.type = "FeatureCollection"
@@ -394,12 +295,16 @@ private fun initWebOverlayLayers(
     solidLayer.id = POLYLINES_SOLID_LAYER_ID
     solidLayer.type = "line"
     solidLayer.source = POLYLINES_SOURCE_ID
+
     val solidPaint = js("{}")
     solidPaint["line-color"] = arrayOf("get", PROP_COLOR)
     solidPaint["line-width"] = arrayOf("get", PROP_WIDTH)
-    solidPaint["line-cap"] = "round"
-    solidPaint["line-join"] = "round"
     solidLayer.paint = solidPaint
+
+    val solidLayout = js("{}")
+    solidLayout["line-cap"] = "round"
+    solidLayout["line-join"] = "round"
+    solidLayer.layout = solidLayout
     solidLayer.filter = arrayOf("==", arrayOf("get", PROP_IS_DASHED), false)
     map.addLayer(solidLayer)
 
@@ -407,13 +312,17 @@ private fun initWebOverlayLayers(
     dashedLayer.id = POLYLINES_DASHED_LAYER_ID
     dashedLayer.type = "line"
     dashedLayer.source = POLYLINES_SOURCE_ID
+
     val dashedPaint = js("{}")
     dashedPaint["line-color"] = arrayOf("get", PROP_COLOR)
     dashedPaint["line-width"] = arrayOf("get", PROP_WIDTH)
-    dashedPaint["line-cap"] = "round"
-    dashedPaint["line-join"] = "round"
     dashedPaint["line-dasharray"] = arrayOf(4, 4)
     dashedLayer.paint = dashedPaint
+
+    val dashedLayout = js("{}")
+    dashedLayout["line-cap"] = "round"
+    dashedLayout["line-join"] = "round"
+    dashedLayer.layout = dashedLayout
     dashedLayer.filter = arrayOf("==", arrayOf("get", PROP_IS_DASHED), true)
     map.addLayer(dashedLayer)
 

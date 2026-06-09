@@ -1,4 +1,4 @@
-package io.github.tiagopraia.kmp.mapbox
+package io.github.tiagopraia.kmp.mapbox.map
 
 import android.Manifest
 import android.app.Activity
@@ -35,7 +35,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import io.github.tiagopraia.kmp.mapbox.configs.MapConfig
+import io.github.tiagopraia.kmp.mapbox.GeoPoint
+import io.github.tiagopraia.kmp.mapbox.config.AndroidMapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.MapOverlays
 import io.github.tiagopraia.kmp.mapbox.gps.rememberGpsState
 
@@ -43,7 +44,7 @@ import io.github.tiagopraia.kmp.mapbox.gps.rememberGpsState
 fun AndroidMapWrapper(
     accessToken: String,
     overlays: MapOverlays = MapOverlays(),
-    config: MapConfig = MapConfig(),
+    config: AndroidMapConfig = AndroidMapConfig(),
     onMapReady: () -> Unit = {},
     onMapClick: ((GeoPoint) -> Boolean)? = null,
     onOverlayClick: (id: String) -> Unit = {},
