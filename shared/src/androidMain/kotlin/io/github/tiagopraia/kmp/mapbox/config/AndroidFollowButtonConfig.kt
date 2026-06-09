@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
-data class FollowButtonConfig(
+data class AndroidFollowButtonConfig(
     val buttonModifier: Modifier = Modifier.padding(12.dp).size(48.dp),
     val buttonAlignment: Alignment = Alignment.BottomEnd,
     val buttonShape: Shape = CircleShape,

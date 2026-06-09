@@ -87,7 +87,7 @@ fun AndroidMap(
 ) {
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     var cameraMode by rememberSaveable { mutableStateOf(CameraTrackingMode.TRACKING_NORTH) }
-    var savedZoom by rememberSaveable { mutableDoubleStateOf(config.initialZoom) }
+    var savedZoom by rememberSaveable { mutableDoubleStateOf(config.mapConfig.initialZoom) }
     var savedLat by rememberSaveable { mutableStateOf<Double?>(null) }
     var savedLng by rememberSaveable { mutableStateOf<Double?>(null) }
     val overlaysRef = remember { mutableStateOf(overlays) }
@@ -168,7 +168,7 @@ fun BoxScope.FollowButton(
                 val transitionOptions =
                     DefaultViewportTransitionOptions
                         .Builder()
-                        .maxDurationMs(config.animationDuration)
+                        .maxDurationMs(config.mapConfig.animationDuration)
                         .build()
 
                 val bearingConfig =
@@ -285,7 +285,7 @@ private fun initOverlayLayers(
     style.addLayer(
         lineLayer(POLYLINES_SOLID_LAYER_ID, POLYLINES_SOURCE_ID) {
             lineColor(get(PROP_COLOR))
-            lineWidth(config.lineWidth)
+            lineWidth(config.mapConfig.lineWidth)
             lineCap(LineCap.ROUND)
             lineJoin(LineJoin.ROUND)
             filter(
@@ -300,7 +300,7 @@ private fun initOverlayLayers(
     style.addLayer(
         lineLayer(POLYLINES_DASHED_LAYER_ID, POLYLINES_SOURCE_ID) {
             lineColor(get(PROP_COLOR))
-            lineWidth(config.lineWidth)
+            lineWidth(config.mapConfig.lineWidth)
             lineCap(LineCap.ROUND)
             lineJoin(LineJoin.ROUND)
             lineDasharray(listOf(4.0, 4.0))
@@ -315,7 +315,7 @@ private fun initOverlayLayers(
 
     style.addLayer(
         circleLayer(CIRCLES_LAYER_ID, CIRCLES_SOURCE_ID) {
-            circleRadius(config.pointRadius)
+            circleRadius(config.mapConfig.pointRadius)
             circleColor(get(PROP_COLOR))
         },
     )
@@ -342,7 +342,7 @@ private fun buildMapView(
     return MapView(context).apply {
         restoreFreeCameraIfNeeded(mapboxMap, initialCameraMode, savedZoom, savedLat, savedLng)
 
-        mapboxMap.loadStyle(config.styleUri) { style ->
+        mapboxMap.loadStyle(config.mapConfig.styleUri) { style ->
             setupCompass(config)
             setupLocation(isGpsEnabled, config)
             setupCamera(initialCameraMode, savedZoom, savedLat, savedLng)

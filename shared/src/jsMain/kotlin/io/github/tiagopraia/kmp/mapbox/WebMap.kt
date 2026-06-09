@@ -149,8 +149,8 @@ fun WebMap(
 
             val options = js("{}")
             options.container = mapId
-            options.style = config.styleUri
-            options.zoom = config.initialZoom
+            options.style = config.mapConfig.styleUri
+            options.zoom = config.mapConfig.initialZoom
             options.attributionControl = false
 
             val map = MapBox.Map(options)
@@ -168,8 +168,8 @@ fun WebMap(
                 geolocateOptions.showUserHeading = config.showUserHeading
                 geolocateOptions.showAccuracyCircle = config.showAccuracyRing
                 geolocateOptions.fitBoundsOptions = js("{}")
-                geolocateOptions.fitBoundsOptions.maxZoom = config.initialZoom
-                geolocateOptions.fitBoundsOptions.duration = config.animationDuration
+                geolocateOptions.fitBoundsOptions.maxZoom = config.mapConfig.initialZoom
+                geolocateOptions.fitBoundsOptions.duration = config.mapConfig.animationDuration
 
                 val followPosition =
                     config.followButton?.position?.mapboxPosition
@@ -332,7 +332,7 @@ private fun initWebOverlayLayers(
     circleLayer.source = CIRCLES_SOURCE_ID
     val circlePaint = js("{}")
     circlePaint["circle-color"] = arrayOf("get", PROP_COLOR)
-    circlePaint["circle-radius"] = config.pointRadius
+    circlePaint["circle-radius"] = config.mapConfig.pointRadius
     circleLayer.paint = circlePaint
     map.addLayer(circleLayer)
 }

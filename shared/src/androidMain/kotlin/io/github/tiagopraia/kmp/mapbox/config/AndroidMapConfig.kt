@@ -1,11 +1,8 @@
 package io.github.tiagopraia.kmp.mapbox.config
 
-import io.github.tiagopraia.kmp.mapbox.configs.MapStyle
+import io.github.tiagopraia.kmp.mapbox.configs.MapConfig
 
 data class AndroidMapConfig(
-    val initialZoom: Double = 17.0,
-    val animationDuration: Long = 1000,
-    val styleUri: String = MapStyle.OUTDOORS,
     val compassPosition: Int = -1,
     val compassMarginTop: Float = 75f,
     val compassMarginLeft: Float = 16f,
@@ -13,7 +10,6 @@ data class AndroidMapConfig(
     val compassMarginBottom: Float = -1f,
     val locationPulseAnimation: Boolean = false,
     val showAccuracyRing: Boolean = true,
-    val pointRadius: Double = 8.0,
-    val lineWidth: Double = 4.0,
-    val followButton: FollowButtonConfig = FollowButtonConfig(),
+    val mapConfig: MapConfig = MapConfig(),
+    val followButton: AndroidFollowButtonConfig = AndroidFollowButtonConfig(),
 )
