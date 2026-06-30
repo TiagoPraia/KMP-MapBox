@@ -84,7 +84,7 @@ fun WebMap(
     accessToken: String,
     overlays: MapOverlays,
     config: WebMapConfig,
-    onMapClick: ((GeoPoint) -> Boolean)?,
+    onMapClick: ((GeographicPoint) -> Boolean)?,
     onOverlayClick: (id: String) -> Unit,
     extraHTML: List<HTMLElement>,
     modifier: Modifier,
@@ -210,7 +210,7 @@ fun WebMap(
                     }
                 }
 
-                onMapClick?.invoke(GeoPoint(lat, lng, 0.0))
+                onMapClick?.invoke(GeographicPoint(lat, lng, 0.0))
             }
 
             mapRef.value = map

@@ -60,7 +60,7 @@ import com.mapbox.maps.plugin.viewport.viewport
 import io.github.tiagopraia.kmp.mapbox.CIRCLES_LAYER_ID
 import io.github.tiagopraia.kmp.mapbox.CIRCLES_SOURCE_ID
 import io.github.tiagopraia.kmp.mapbox.CameraTrackingMode
-import io.github.tiagopraia.kmp.mapbox.GeoPoint
+import io.github.tiagopraia.kmp.mapbox.GeographicPoint
 import io.github.tiagopraia.kmp.mapbox.NORTH
 import io.github.tiagopraia.kmp.mapbox.POLYLINES_DASHED_LAYER_ID
 import io.github.tiagopraia.kmp.mapbox.POLYLINES_SOLID_LAYER_ID
@@ -81,7 +81,7 @@ fun AndroidMap(
     overlays: MapOverlays,
     onOverlayClick: (id: String) -> Unit,
     onMapReady: () -> Unit,
-    onMapClick: ((GeoPoint) -> Boolean)? = null,
+    onMapClick: ((GeographicPoint) -> Boolean)? = null,
     isGpsEnabled: Boolean,
     modifier: Modifier,
 ) {
@@ -333,7 +333,7 @@ private fun buildMapView(
     savedLng: Double?,
     onCameraPositionChanged: (Double, Double, Double) -> Unit,
     onMapReady: () -> Unit,
-    onMapClick: ((GeoPoint) -> Boolean)? = null,
+    onMapClick: ((GeographicPoint) -> Boolean)? = null,
     onOverlayClick: (id: String) -> Unit,
     onUserInteraction: () -> Unit,
 ): MapView {
@@ -476,7 +476,7 @@ private fun MapView.restoreTrackingMode(
 
 private fun registerGestureListeners(
     mapboxMap: MapboxMap,
-    onMapClick: ((GeoPoint) -> Boolean)?,
+    onMapClick: ((GeographicPoint) -> Boolean)?,
     onOverlayClick: (id: String) -> Unit,
 ) {
     mapboxMap.addOnMapClickListener { point ->
@@ -507,7 +507,7 @@ private fun registerGestureListeners(
 
             // No overlay clicked
             onMapClick?.invoke(
-                GeoPoint(
+                GeographicPoint(
                     latitude = point.latitude(),
                     longitude = point.longitude(),
                     altitude = point.altitude(),

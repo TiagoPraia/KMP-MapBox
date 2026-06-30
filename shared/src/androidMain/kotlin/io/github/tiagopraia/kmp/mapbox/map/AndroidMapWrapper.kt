@@ -32,13 +32,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import io.github.tiagopraia.kmp.mapbox.GeoPoint
+import io.github.tiagopraia.kmp.mapbox.GeographicPoint
 import io.github.tiagopraia.kmp.mapbox.config.AndroidMapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.MapOverlays
 import io.github.tiagopraia.kmp.mapbox.gps.rememberGpsState
+
+private const val REQUESTED_LOCATION = "location_permanently_denied"
+
+private fun isDeniedPermanently(context: Context): Boolean =
+    context
+        .getSharedPreferences("map_prefs", Context.MODE_PRIVATE)
+        .getBoolean(REQUESTED_LOCATION, false)
+
+private fun markDeniedPermanently(context: Context) =
+    context
+        .getSharedPreferences("map_prefs", Context.MODE_PRIVATE)
+        .edit {
+            putBoolean(REQUESTED_LOCATION, true)
+        }
 
 @Composable
 fun AndroidMapWrapper(
@@ -46,7 +61,7 @@ fun AndroidMapWrapper(
     overlays: MapOverlays = MapOverlays(),
     config: AndroidMapConfig = AndroidMapConfig(),
     onMapReady: () -> Unit = {},
-    onMapClick: ((GeoPoint) -> Boolean)? = null,
+    onMapClick: ((GeographicPoint) -> Boolean)? = null,
     onOverlayClick: (id: String) -> Unit = {},
     modifier: Modifier = Modifier.fillMaxSize(),
 ) {
@@ -56,45 +71,38 @@ fun AndroidMapWrapper(
 
     var permissionState by rememberSaveable {
         mutableStateOf(
-            if (ContextCompat.checkSelfPermission(
+            when {
+                ContextCompat.checkSelfPermission(
                     context,
                     Manifest.permission.ACCESS_FINE_LOCATION,
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                PermissionState.GRANTED
-            } else {
-                PermissionState.NOT_ASKED
+                ) == PackageManager.PERMISSION_GRANTED -> PermissionState.GRANTED
+
+                isDeniedPermanently(context) -> PermissionState.DENIED_PERMANENTLY
+
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                    ) -> PermissionState.DENIED_ONCE
+
+                else -> PermissionState.NOT_ASKED
             },
         )
     }
 
-    var deniedOnce by rememberSaveable { mutableStateOf(false) }
     val isGpsEnabled = rememberGpsState()
     var mapHasInitialized by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions(),
-        ) { permissions ->
-            val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
-            permissionState =
-                when {
-                    granted -> PermissionState.GRANTED
-                    !deniedOnce &&
-                        !ActivityCompat.shouldShowRequestPermissionRationale(
-                            activity,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                        ) -> PermissionState.NOT_ASKED
-                    ActivityCompat.shouldShowRequestPermissionRationale(
-                        activity,
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                    ) -> {
-                        deniedOnce = true
-                        PermissionState.DENIED_ONCE
-                    }
-                    else -> PermissionState.DENIED_PERMANENTLY
-                }
-        }
+        createPermissionLauncher(
+            context = context,
+            activity = activity,
+            currentState = { permissionState },
+            onStateChange = { permissionState = it },
+        )
 
     LaunchedEffect(Unit) {
         if (permissionState == PermissionState.NOT_ASKED) {
@@ -122,6 +130,39 @@ fun AndroidMapWrapper(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    MakeChoice(
+        accessToken = accessToken,
+        context = context,
+        permissionLauncher = permissionLauncher,
+        permissionState = permissionState,
+        isGpsEnabled = isGpsEnabled,
+        mapHasInitialized = mapHasInitialized,
+        onMapHasInitialized = { mapHasInitialized = true },
+        config = config,
+        overlays = overlays,
+        onMapReady = onMapReady,
+        onMapClick = onMapClick,
+        onOverlayClick = onOverlayClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun MakeChoice(
+    accessToken: String,
+    context: Context,
+    permissionLauncher: ManagedActivityResultLauncher<Array<String>, Map<String, Boolean>>,
+    permissionState: PermissionState,
+    isGpsEnabled: Boolean,
+    mapHasInitialized: Boolean,
+    onMapHasInitialized: () -> Unit,
+    config: AndroidMapConfig,
+    overlays: MapOverlays,
+    onMapReady: () -> Unit,
+    onMapClick: ((GeographicPoint) -> Boolean)?,
+    onOverlayClick: (id: String) -> Unit = {},
+    modifier: Modifier,
+) {
     when (permissionState) {
         PermissionState.GRANTED ->
             if (isGpsEnabled || mapHasInitialized) {
@@ -131,7 +172,7 @@ fun AndroidMapWrapper(
                     overlays = overlays,
                     onOverlayClick = onOverlayClick,
                     onMapReady = {
-                        mapHasInitialized = true
+                        onMapHasInitialized()
                         onMapReady()
                     },
                     onMapClick = onMapClick,
@@ -148,6 +189,42 @@ fun AndroidMapWrapper(
             }
         PermissionState.DENIED_PERMANENTLY -> PermissionDeniedPermanently(context)
     }
+}
+
+@Composable
+private fun createPermissionLauncher(
+    context: Context,
+    activity: Activity,
+    currentState: () -> PermissionState,
+    onStateChange: (PermissionState) -> Unit,
+) = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestMultiplePermissions(),
+) { permissions ->
+    val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+    val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+    val newPermissionState =
+        when {
+            fineGranted -> PermissionState.GRANTED
+
+            currentState() == PermissionState.DENIED_ONCE &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                ) -> {
+                markDeniedPermanently(context)
+                PermissionState.DENIED_PERMANENTLY
+            }
+
+            coarseGranted ||
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                ) -> PermissionState.DENIED_ONCE
+
+            else -> PermissionState.NOT_ASKED
+        }
+    onStateChange(newPermissionState)
 }
 
 private fun permissionLauncher(

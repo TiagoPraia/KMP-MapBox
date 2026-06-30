@@ -11,7 +11,7 @@ fun WebMapWrapper(
     accessToken: String,
     overlays: MapOverlays = MapOverlays(),
     config: WebMapConfig = WebMapConfig(),
-    onMapClick: ((GeoPoint) -> Boolean)? = null,
+    onMapClick: ((GeographicPoint) -> Boolean)? = null,
     onOverlayClick: (id: String) -> Unit = {},
     modifier: Modifier = Modifier.fillMaxSize(),
     extraHTML: List<HTMLElement> = emptyList(),
