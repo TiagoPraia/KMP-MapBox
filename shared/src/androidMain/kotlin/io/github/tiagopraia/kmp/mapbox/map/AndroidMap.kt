@@ -45,7 +45,10 @@ import com.mapbox.maps.extension.style.layers.properties.generated.LineJoin
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
+import com.mapbox.maps.extension.style.sources.generated.rasterDemSource
 import com.mapbox.maps.extension.style.sources.getSourceAs
+import com.mapbox.maps.extension.style.style
+import com.mapbox.maps.extension.style.terrain.generated.terrain
 import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
@@ -342,7 +345,14 @@ private fun buildMapView(
     return MapView(context).apply {
         restoreFreeCameraIfNeeded(mapboxMap, initialCameraMode, savedZoom, savedLat, savedLng)
 
-        mapboxMap.loadStyle(config.mapConfig.styleUri) { style ->
+        mapboxMap.loadStyle(
+            style(config.mapConfig.styleUri) {
+                +rasterDemSource("dem") {
+                    url("mapbox://mapbox.mapbox-terrain-dem-v1")
+                }
+                +terrain("dem")
+            }
+        ) { style ->
             setupCompass(config)
             setupLocation(isGpsEnabled, config)
             setupCamera(initialCameraMode, savedZoom, savedLat, savedLng)
@@ -510,7 +520,7 @@ private fun registerGestureListeners(
                 GeographicPoint(
                     latitude = point.latitude(),
                     longitude = point.longitude(),
-                    altitude = point.altitude(),
+                    altitude = mapboxMap.getElevation(point) ?: 0.0,
                 ),
             )
         }

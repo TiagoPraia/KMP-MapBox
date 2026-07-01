@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.github.tiagopraia"
-version = "0.3.4"
+version = "0.3.5"
 
 kotlin {
     js(IR) {
