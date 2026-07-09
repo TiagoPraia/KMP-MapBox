@@ -1,3 +1,6 @@
+[![CI](https://github.com/tiagopraia/kmp-mapbox/actions/workflows/ci.yml/badge.svg)](https://github.com/tiagopraia/kmp-mapbox/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.tiagopraia/kmp-mapbox)](https://central.sonatype.com/artifact/io.github.tiagopraia/kmp-mapbox)
+
 This is a Kotlin Multiplatform project targeting Android, Web.
 
 * [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
