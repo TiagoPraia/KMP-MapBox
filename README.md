@@ -1,6 +1,11 @@
 [![CI](https://github.com/tiagopraia/kmp-mapbox/actions/workflows/ci.yml/badge.svg)](https://github.com/tiagopraia/kmp-mapbox/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.tiagopraia/kmp-mapbox)](https://central.sonatype.com/artifact/io.github.tiagopraia/kmp-mapbox)
-
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?logo=kotlin)](https://kotlinlang.org/)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.11.1-6750A4?logo=jetpackcompose)](https://www.jetbrains.com/lp/compose-multiplatform/)
+[![Mapbox Android](https://img.shields.io/badge/Mapbox%20Android-11.9.0-4264FB?logo=mapbox)](https://docs.mapbox.com/android/maps/)
+[![Mapbox GL JS](https://img.shields.io/badge/Mapbox%20GL%20JS-3.9.4-4264FB?logo=mapbox)](https://docs.mapbox.com/mapbox-gl-js/)
+[![Targets](https://img.shields.io/badge/Targets-Android%20%7C%20JS%2FWasm-8B5CF6)](#)
+[![License MIT](https://img.shields.io/badge/License-MIT-3B82F6)](./LICENSE)
 This is a Kotlin Multiplatform project targeting Android, Web.
 
 * [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
