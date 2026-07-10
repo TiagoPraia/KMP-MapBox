@@ -36,10 +36,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build library
-        run: ./gradlew :kmp-mapbox:build --no-daemon --no-parallel
+        run: ./gradlew :shared:build
 
       - name: Run tests
-        run: ./gradlew :kmp-mapbox:allTests
+        run: ./gradlew :shared:allTests
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
