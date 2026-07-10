@@ -351,7 +351,7 @@ private fun buildMapView(
                     url("mapbox://mapbox.mapbox-terrain-dem-v1")
                 }
                 +terrain("dem")
-            }
+            },
         ) { style ->
             setupCompass(config)
             setupLocation(isGpsEnabled, config)
