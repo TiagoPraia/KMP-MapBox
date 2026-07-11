@@ -63,6 +63,7 @@ fun AndroidMapWrapper(
     onMapReady: () -> Unit = {},
     onMapClick: ((GeographicPoint) -> Boolean)? = null,
     onOverlayClick: (id: String) -> Unit = {},
+    onLocationUpdate: ((GeographicPoint) -> Unit)? = null,
     modifier: Modifier = Modifier.fillMaxSize(),
 ) {
     val context = LocalContext.current
@@ -143,6 +144,7 @@ fun AndroidMapWrapper(
         onMapReady = onMapReady,
         onMapClick = onMapClick,
         onOverlayClick = onOverlayClick,
+        onLocationUpdate = onLocationUpdate,
         modifier = modifier,
     )
 }
@@ -161,6 +163,7 @@ private fun MakeChoice(
     onMapReady: () -> Unit,
     onMapClick: ((GeographicPoint) -> Boolean)?,
     onOverlayClick: (id: String) -> Unit = {},
+    onLocationUpdate: ((GeographicPoint) -> Unit)?,
     modifier: Modifier,
 ) {
     when (permissionState) {
@@ -177,6 +180,7 @@ private fun MakeChoice(
                     },
                     onMapClick = onMapClick,
                     isGpsEnabled = isGpsEnabled,
+                    onLocationUpdate = onLocationUpdate,
                     modifier = modifier,
                 )
             } else {

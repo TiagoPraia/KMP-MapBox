@@ -6,6 +6,7 @@
 [![Mapbox GL JS](https://img.shields.io/badge/Mapbox%20GL%20JS-3.9.4-4264FB?logo=mapbox)](https://docs.mapbox.com/mapbox-gl-js/)
 [![Targets](https://img.shields.io/badge/Targets-Android%20%7C%20JS%2FWasm-8B5CF6)](#)
 [![License MIT](https://img.shields.io/badge/License-MIT-3B82F6)](./LICENSE)
+
 This is a Kotlin Multiplatform project targeting Android, Web.
 
 * [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.

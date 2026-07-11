@@ -86,6 +86,7 @@ fun AndroidMap(
     onMapReady: () -> Unit,
     onMapClick: ((GeographicPoint) -> Boolean)? = null,
     isGpsEnabled: Boolean,
+    onLocationUpdate: ((GeographicPoint) -> Unit)?,
     modifier: Modifier,
 ) {
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
@@ -120,6 +121,7 @@ fun AndroidMap(
                     savedZoom = savedZoom,
                     savedLat = savedLat,
                     savedLng = savedLng,
+                    onLocationUpdate = onLocationUpdate,
                     onCameraPositionChanged = { zoom, lat, lng ->
                         savedZoom = zoom
                         savedLat = lat
@@ -334,6 +336,7 @@ private fun buildMapView(
     savedZoom: Double,
     savedLat: Double?,
     savedLng: Double?,
+    onLocationUpdate: ((GeographicPoint) -> Unit)?,
     onCameraPositionChanged: (Double, Double, Double) -> Unit,
     onMapReady: () -> Unit,
     onMapClick: ((GeographicPoint) -> Boolean)? = null,
@@ -354,7 +357,7 @@ private fun buildMapView(
             },
         ) { style ->
             setupCompass(config)
-            setupLocation(isGpsEnabled, config)
+            setupLocation(isGpsEnabled, onLocationUpdate, config)
             setupCamera(initialCameraMode, savedZoom, savedLat, savedLng)
             setupViewportObserver(onUserInteraction)
             setupCameraChangeListener(onCameraPositionChanged)
@@ -381,6 +384,7 @@ private fun MapView.setupCompass(config: AndroidMapConfig) {
 
 private fun MapView.setupLocation(
     isGpsEnabled: Boolean,
+    onLocationUpdate: ((GeographicPoint) -> Unit)?,
     config: AndroidMapConfig,
 ) {
     location.updateSettings {
@@ -390,6 +394,19 @@ private fun MapView.setupLocation(
         locationPuck = createDefault2DPuck(withBearing = true)
         puckBearing = PuckBearing.HEADING
         puckBearingEnabled = true
+    }
+
+    onLocationUpdate?.let { callback ->
+        location.addOnIndicatorPositionChangedListener { point ->
+            val altitude = mapboxMap.getElevation(point) ?: 0.0
+            callback(
+                GeographicPoint(
+                    latitude = point.latitude(),
+                    longitude = point.longitude(),
+                    altitude = altitude,
+                ),
+            )
+        }
     }
 }
 
