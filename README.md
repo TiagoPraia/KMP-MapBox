@@ -18,6 +18,11 @@ as overlay.
 
 VERY IMPORTANT: Always have your version in the newest one, since all the other tend to be "deleted".
 
+# Documentation
+This ADR file (Architecture Decision Record) is an arranged and documented list of
+decisions done, for code or project structure, to help AI or developers to not make mistakes done
+before. [Click here for ADR file](./ADR.md)
+
 # Features
 
 ---
