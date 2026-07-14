@@ -4,45 +4,106 @@
 [![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.11.1-6750A4?logo=jetpackcompose)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![Mapbox Android](https://img.shields.io/badge/Mapbox%20Android-11.9.0-4264FB?logo=mapbox)](https://docs.mapbox.com/android/maps/)
 [![Mapbox GL JS](https://img.shields.io/badge/Mapbox%20GL%20JS-3.9.4-4264FB?logo=mapbox)](https://docs.mapbox.com/mapbox-gl-js/)
-[![Targets](https://img.shields.io/badge/Targets-Android%20%7C%20JS%2FWasm-8B5CF6)](#)
+[![Targets](https://img.shields.io/badge/Targets-Android%20%7C%20JS-8B5CF6)](#)
 [![License MIT](https://img.shields.io/badge/License-MIT-3B82F6)](./LICENSE)
 
-This is a Kotlin Multiplatform project targeting Android, Web.
+KMP-MapBox is a Kotlin Multiplatform library that instantiates the Map from MapBox libraries,
+in Android and in Web. It simplifies your life by creating the map for you. You can fully
+use overlays in your own project, using Kotlin for Android or HTML for Web.
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-    - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-      For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-      Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-      folder is the appropriate location.
+HTML is needed for Web, because MapBox JS returns a GL, and since it is an HTMLElement, it can't have any
+Kotlin components in overlay. If MapBox puts Wasm as target, then HTML will no longer be needed and the UI
+will be shared, but for now, not possible. You can still use ComposeViewport though, just no Kotlin Component
+as overlay.
 
-### Running the apps
+VERY IMPORTANT: Always have your version in the newest one, since all the other tend to be "deleted".
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and
-options:
-
-- Android app: `./gradlew :androidApp:assembleDebug`
-- Web app:
-    - Wasm target (faster, modern browsers): `./gradlew :webApp:wasmJsBrowserDevelopmentRun`
-    - JS target (slower, supports older browsers): `./gradlew :webApp:jsBrowserDevelopmentRun`
-
-### Running tests
-
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
-
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- Web tests:
-    - Wasm target: `./gradlew :shared:wasmJsTest`
-    - JS target: `./gradlew :shared:jsTest`
+# Features
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
+Beside creating the map, you can retrieve your position with latitude, longitude and altitude.
+The map uses Fine Location, in Android, for user location, which will retrieve the most accurate
+value possible.
+The map also lets the user lock in its position, and lets the user put the camera in follow direction mode.
 
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack
-channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-If you face any issues, please report them on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+# Setup
+
+---
+
+To use the library it is important to have a Mapbox token, that you can get if by creating an account.
+This token needs to be passed to the MapWrapper. If you don't want to put it hardcoded, and you are using
+both Android and Web, I recommend using library buildKonfig (https://github.com/yshrsmz/BuildKonfig), it's a plugin
+that let's build config work for Android and all the other targets.
+If you need help configuring it, look at build.gradle.kts (:webApp).
+
+### Importing Library
+
+To set up the library you need to put in your build.gradle:
+
+````kotlin
+implementation("io.github.tiagopraia:kmp-mapbox:$version")
+````
+
+or if using libs.versions.toml:
+
+-   in libs.version.toml:
+    ````
+    [versions]
+    (...)
+    kmp-mapbox-version = $version
+    
+    [libraries]
+    (...)
+    kmp-mapbox = { module = "io.github.tiagopraia:kmp-mapbox", version.ref = "kmp-mapbox-version" }
+    ````
+
+-   in build.gradle (depends on project structure):
+    ````kotlin
+    kotlin {
+        sourceSets {
+            commonMain.dependencies {
+                implementation(libs.kmp.mapbox)
+            }
+        }
+    }
+    ````
+    OR
+
+    ````kotlin
+    dependencies {
+        implementation(libs.kmp.mapbox)
+    }
+    ````
+    
+### Other important things
+
+Since this library depends on other libraries, you need to have them in your project too.
+(These are the versions library has):
+-   They don't need to be together, since one is strictly Android and the other is strictly Web
+    ````kotlin
+    dependencies {
+    implementation("org.jetbrains.compose.html:html-core:1.11.1)
+    implementation("com.mapbox.maps:android:11.9.0")
+    }
+    ````
+-   This one goes into the build.gradle even if using libs.versions.toml
+    ````kotlin
+    implementation(npm("mapbox-gl", "3.9.4"))
+    ````
+-   In settings.gradle.kts:
+    ````kotlin
+    dependencyResolutionManagement {
+        repositories {
+            google {
+                mavenContent {
+                    // Can have others, but chromium with necessary
+                    includeGroupAndSubgroups("org.chromium")
+                }
+            }
+            maven {
+                url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+            }
+        }
+    }
+    ````
