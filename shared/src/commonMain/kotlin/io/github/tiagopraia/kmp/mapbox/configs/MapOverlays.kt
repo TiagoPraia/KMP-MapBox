@@ -10,7 +10,7 @@ data class MapOverlays(
 data class CircleOverlay(
     val id: String,
     val center: GeographicPoint,
-    val radius: Double,
+    val radius: Double? = null,
     val colorHex: String,
     val isClickable: Boolean = true,
 )
@@ -19,7 +19,7 @@ data class PolylineOverlay(
     val id: String,
     val points: List<GeographicPoint>,
     val colorHex: String,
-    val width: Double,
+    val width: Double? = null,
     val isDashed: Boolean = false,
     val isClickable: Boolean = true,
 )

@@ -9,5 +9,6 @@ const val PROP_OVERLAY_ID = "overlayId"
 const val PROP_IS_CLICKABLE = "isClickable"
 const val PROP_COLOR = "color"
 const val PROP_WIDTH = "width"
+const val PROP_RADIUS = "radius"
 const val PROP_IS_DASHED = "isDashed"
 const val NORTH = 0.0

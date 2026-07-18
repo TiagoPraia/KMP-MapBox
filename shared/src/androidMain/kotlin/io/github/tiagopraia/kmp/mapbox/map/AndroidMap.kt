@@ -35,8 +35,10 @@ import com.mapbox.maps.MapboxMap
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.Style
+import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.expressions.generated.Expression.Companion.eq
 import com.mapbox.maps.extension.style.expressions.generated.Expression.Companion.get
+import com.mapbox.maps.extension.style.expressions.generated.Expression.Companion.interpolate
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.circleLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
@@ -72,8 +74,11 @@ import io.github.tiagopraia.kmp.mapbox.PROP_COLOR
 import io.github.tiagopraia.kmp.mapbox.PROP_IS_CLICKABLE
 import io.github.tiagopraia.kmp.mapbox.PROP_IS_DASHED
 import io.github.tiagopraia.kmp.mapbox.PROP_OVERLAY_ID
+import io.github.tiagopraia.kmp.mapbox.PROP_RADIUS
+import io.github.tiagopraia.kmp.mapbox.PROP_WIDTH
 import io.github.tiagopraia.kmp.mapbox.config.AndroidMapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.CircleOverlay
+import io.github.tiagopraia.kmp.mapbox.configs.MapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.MapOverlays
 import io.github.tiagopraia.kmp.mapbox.configs.PolylineOverlay
 
@@ -100,6 +105,7 @@ fun AndroidMap(
     OverlayDrawingEffect(
         mapViewRef = mapViewRef.value,
         overlays = overlaysRef.value,
+        config = config.mapConfig,
     )
 
     LaunchedEffect(isGpsEnabled, mapViewRef.value) {
@@ -225,18 +231,46 @@ fun BoxScope.FollowButton(
 private fun OverlayDrawingEffect(
     mapViewRef: MapView?,
     overlays: MapOverlays,
+    config: MapConfig,
 ) {
     LaunchedEffect(overlays, mapViewRef) {
         val style = mapViewRef?.mapboxMap?.style ?: return@LaunchedEffect
-        updateCirclesSource(style, overlays.circles)
-        updatePolylinesSource(style, overlays.polylines)
+        updateCirclesSource(style, overlays.circles, config.pointRadius)
+        updatePolylinesSource(style, overlays.polylines, config.lineWidth)
     }
 }
+
+private fun buildZoomInterpolatedSize(
+    propertyName: String,
+    referenceZoom: Double,
+    minZoom: Double,
+    maxZoom: Double,
+    minFactor: Double,
+    maxFactor: Double,
+): Expression =
+    interpolate {
+        linear()
+        zoom()
+        literal(minZoom)
+        product {
+            literal(minFactor)
+            get(propertyName)
+        }
+        literal(referenceZoom)
+        get(propertyName)
+        literal(maxZoom)
+        product {
+            literal(maxFactor)
+            get(propertyName)
+        }
+    }
 
 private fun updateCirclesSource(
     style: Style,
     circles: List<CircleOverlay>,
+    defaultRadius: Double,
 ) {
+    println("updateCirclesSource called with ${circles.size} circles: ${circles.map { it.id }}")
     val features =
         circles.map { circle ->
             Feature.fromGeometry(
@@ -245,6 +279,7 @@ private fun updateCirclesSource(
                     addProperty(PROP_OVERLAY_ID, circle.id)
                     addProperty(PROP_IS_CLICKABLE, circle.isClickable)
                     addProperty(PROP_COLOR, circle.colorHex)
+                    addProperty(PROP_RADIUS, circle.radius ?: defaultRadius)
                 },
             )
         }
@@ -254,7 +289,9 @@ private fun updateCirclesSource(
 private fun updatePolylinesSource(
     style: Style,
     polylines: List<PolylineOverlay>,
+    defaultWidth: Double,
 ) {
+    println("updatePolyLineSource called with ${polylines.size} circles: ${polylines.map { it.id }}")
     val features =
         polylines.map { polyline ->
             Feature.fromGeometry(
@@ -266,6 +303,7 @@ private fun updatePolylinesSource(
                     addProperty(PROP_IS_CLICKABLE, polyline.isClickable)
                     addProperty(PROP_COLOR, polyline.colorHex)
                     addProperty(PROP_IS_DASHED, polyline.isDashed)
+                    addProperty(PROP_WIDTH, polyline.width ?: defaultWidth)
                 },
             )
         }
@@ -287,12 +325,34 @@ private fun initOverlayLayers(
         },
     )
 
+    val lineWidthExpr =
+        buildZoomInterpolatedSize(
+            propertyName = PROP_WIDTH,
+            referenceZoom = config.mapConfig.initialZoom,
+            minZoom = config.mapConfig.overlayMinZoom,
+            maxZoom = config.mapConfig.overlayMaxZoom,
+            minFactor = config.mapConfig.overlayMinFactor,
+            maxFactor = config.mapConfig.overlayMaxFactor,
+        )
+
+    val circleRadiusExpr =
+        buildZoomInterpolatedSize(
+            propertyName = PROP_RADIUS,
+            referenceZoom = config.mapConfig.initialZoom,
+            minZoom = config.mapConfig.overlayMinZoom,
+            maxZoom = config.mapConfig.overlayMaxZoom,
+            minFactor = config.mapConfig.overlayMinFactor,
+            maxFactor = config.mapConfig.overlayMaxFactor,
+        )
+
     style.addLayer(
         lineLayer(POLYLINES_SOLID_LAYER_ID, POLYLINES_SOURCE_ID) {
             lineColor(get(PROP_COLOR))
-            lineWidth(config.mapConfig.lineWidth)
+            lineWidth(lineWidthExpr)
             lineCap(LineCap.ROUND)
             lineJoin(LineJoin.ROUND)
+            minZoom(config.mapConfig.overlayMinZoom)
+            maxZoom(config.mapConfig.overlayMaxZoom)
             filter(
                 eq {
                     get(PROP_IS_DASHED)
@@ -305,9 +365,11 @@ private fun initOverlayLayers(
     style.addLayer(
         lineLayer(POLYLINES_DASHED_LAYER_ID, POLYLINES_SOURCE_ID) {
             lineColor(get(PROP_COLOR))
-            lineWidth(config.mapConfig.lineWidth)
+            lineWidth(lineWidthExpr)
             lineCap(LineCap.ROUND)
             lineJoin(LineJoin.ROUND)
+            minZoom(config.mapConfig.overlayMinZoom)
+            maxZoom(config.mapConfig.overlayMaxZoom)
             lineDasharray(listOf(4.0, 4.0))
             filter(
                 eq {
@@ -320,7 +382,9 @@ private fun initOverlayLayers(
 
     style.addLayer(
         circleLayer(CIRCLES_LAYER_ID, CIRCLES_SOURCE_ID) {
-            circleRadius(config.mapConfig.pointRadius)
+            circleRadius(circleRadiusExpr)
+            minZoom(config.mapConfig.overlayMinZoom)
+            maxZoom(config.mapConfig.overlayMaxZoom)
             circleColor(get(PROP_COLOR))
         },
     )
@@ -371,14 +435,12 @@ private fun buildMapView(
 
 private fun MapView.setupCompass(config: AndroidMapConfig) {
     compass.updateSettings {
-        clickable = false
         position = if (config.compassPosition != -1) config.compassPosition else Gravity.START
         marginLeft = config.compassMarginLeft
 
         if (config.compassMarginTop != -1f) marginTop = config.compassMarginTop
         if (config.compassMarginRight != -1f) marginRight = config.compassMarginRight
         if (config.compassMarginBottom != -1f) marginBottom = config.compassMarginBottom
-        // enabled = false
     }
 }
 
@@ -453,8 +515,8 @@ private fun setupOverlays(
     config: AndroidMapConfig,
 ) {
     initOverlayLayers(style, config)
-    updateCirclesSource(style, overlaysRef.circles)
-    updatePolylinesSource(style, overlaysRef.polylines)
+    updateCirclesSource(style, overlaysRef.circles, config.mapConfig.pointRadius)
+    updatePolylinesSource(style, overlaysRef.polylines, config.mapConfig.lineWidth)
 }
 
 private fun restoreFreeCameraIfNeeded(
