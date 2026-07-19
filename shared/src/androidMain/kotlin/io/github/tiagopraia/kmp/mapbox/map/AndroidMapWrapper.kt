@@ -36,6 +36,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import io.github.tiagopraia.kmp.mapbox.AnchoredOverlay
 import io.github.tiagopraia.kmp.mapbox.GeographicPoint
 import io.github.tiagopraia.kmp.mapbox.config.AndroidMapConfig
 import io.github.tiagopraia.kmp.mapbox.configs.MapOverlays
@@ -62,7 +63,8 @@ fun AndroidMapWrapper(
     config: AndroidMapConfig = AndroidMapConfig(),
     onMapReady: () -> Unit = {},
     onMapClick: ((GeographicPoint) -> Boolean)? = null,
-    onOverlayClick: (id: String) -> Unit = {},
+    anchoredOverlays: List<AnchoredOverlay> = emptyList(),
+    onOverlayClick: (id: String, point: GeographicPoint) -> Unit = { _, _ -> },
     onLocationUpdate: ((GeographicPoint) -> Unit)? = null,
     modifier: Modifier = Modifier.fillMaxSize(),
 ) {
@@ -141,6 +143,7 @@ fun AndroidMapWrapper(
         onMapHasInitialized = { mapHasInitialized = true },
         config = config,
         overlays = overlays,
+        anchoredOverlays = anchoredOverlays,
         onMapReady = onMapReady,
         onMapClick = onMapClick,
         onOverlayClick = onOverlayClick,
@@ -160,9 +163,10 @@ private fun MakeChoice(
     onMapHasInitialized: () -> Unit,
     config: AndroidMapConfig,
     overlays: MapOverlays,
+    anchoredOverlays: List<AnchoredOverlay>,
     onMapReady: () -> Unit,
     onMapClick: ((GeographicPoint) -> Boolean)?,
-    onOverlayClick: (id: String) -> Unit = {},
+    onOverlayClick: (id: String, point: GeographicPoint) -> Unit,
     onLocationUpdate: ((GeographicPoint) -> Unit)?,
     modifier: Modifier,
 ) {
@@ -173,6 +177,7 @@ private fun MakeChoice(
                     accessToken = accessToken,
                     config = config,
                     overlays = overlays,
+                    anchoredOverlays = anchoredOverlays,
                     onOverlayClick = onOverlayClick,
                     onMapReady = {
                         onMapHasInitialized()

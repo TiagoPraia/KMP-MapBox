@@ -21,7 +21,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.findViewTreeCompositionContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.touchlab.kermit.Logger
 import com.google.gson.JsonObject
 import com.mapbox.common.MapboxOptions
@@ -35,6 +43,7 @@ import com.mapbox.maps.MapboxMap
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.Style
+import com.mapbox.maps.ViewAnnotationAnchor
 import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.expressions.generated.Expression.Companion.eq
 import com.mapbox.maps.extension.style.expressions.generated.Expression.Companion.get
@@ -62,6 +71,11 @@ import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateBearing
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateOptions
 import com.mapbox.maps.plugin.viewport.data.ViewportStatusChangeReason
 import com.mapbox.maps.plugin.viewport.viewport
+import com.mapbox.maps.viewannotation.ViewAnnotationManager
+import com.mapbox.maps.viewannotation.annotationAnchor
+import com.mapbox.maps.viewannotation.geometry
+import com.mapbox.maps.viewannotation.viewAnnotationOptions
+import io.github.tiagopraia.kmp.mapbox.AnchoredOverlay
 import io.github.tiagopraia.kmp.mapbox.CIRCLES_LAYER_ID
 import io.github.tiagopraia.kmp.mapbox.CIRCLES_SOURCE_ID
 import io.github.tiagopraia.kmp.mapbox.CameraTrackingMode
@@ -87,7 +101,8 @@ fun AndroidMap(
     accessToken: String,
     config: AndroidMapConfig,
     overlays: MapOverlays,
-    onOverlayClick: (id: String) -> Unit,
+    anchoredOverlays: List<AnchoredOverlay> = emptyList(),
+    onOverlayClick: (id: String, point: GeographicPoint) -> Unit,
     onMapReady: () -> Unit,
     onMapClick: ((GeographicPoint) -> Boolean)? = null,
     isGpsEnabled: Boolean,
@@ -100,6 +115,10 @@ fun AndroidMap(
     var savedLat by rememberSaveable { mutableStateOf<Double?>(null) }
     var savedLng by rememberSaveable { mutableStateOf<Double?>(null) }
     val overlaysRef = remember { mutableStateOf(overlays) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val savedStateRegistryOwner = LocalSavedStateRegistryOwner.current
+    val activeAnnotations = remember { mutableMapOf<String, ComposeView>() }
+
     overlaysRef.value = overlays
 
     OverlayDrawingEffect(
@@ -107,6 +126,31 @@ fun AndroidMap(
         overlays = overlaysRef.value,
         config = config.mapConfig,
     )
+
+    LaunchedEffect(anchoredOverlays, mapViewRef.value) {
+        val mapView = mapViewRef.value ?: return@LaunchedEffect
+        syncAnchoredOverlays(
+            mapView = mapView,
+            overlays = anchoredOverlays,
+            activeAnnotations = activeAnnotations,
+            lifecycleOwner = lifecycleOwner,
+            savedStateRegistryOwner = savedStateRegistryOwner,
+            currentZoom = savedZoom,
+            minZoom = config.mapConfig.overlayMinZoom,
+            maxZoom = config.mapConfig.overlayMaxZoom,
+        )
+    }
+
+    LaunchedEffect(savedZoom, mapViewRef.value) {
+        val mapView = mapViewRef.value ?: return@LaunchedEffect
+        updateAnnotationsVisibility(
+            manager = mapView.viewAnnotationManager,
+            activeAnnotations = activeAnnotations,
+            currentZoom = savedZoom,
+            minZoom = config.mapConfig.overlayMinZoom,
+            maxZoom = config.mapConfig.overlayMaxZoom,
+        )
+    }
 
     LaunchedEffect(isGpsEnabled, mapViewRef.value) {
         mapViewRef.value?.location?.updateSettings {
@@ -153,6 +197,100 @@ fun AndroidMap(
                 onModeChanged = { cameraMode = it },
                 config = config,
             )
+        }
+    }
+}
+
+private fun syncAnchoredOverlays(
+    mapView: MapView,
+    overlays: List<AnchoredOverlay>,
+    activeAnnotations: MutableMap<String, ComposeView>,
+    lifecycleOwner: LifecycleOwner,
+    savedStateRegistryOwner: SavedStateRegistryOwner,
+    currentZoom: Double,
+    minZoom: Double,
+    maxZoom: Double,
+) {
+    val manager = mapView.viewAnnotationManager
+    val currentIds = overlays.map { it.id }.toSet()
+    val parentCompositionContext = mapView.findViewTreeCompositionContext()
+    val isVisible = currentZoom in minZoom..maxZoom
+    val density = mapView.context.resources.displayMetrics.density
+
+    activeAnnotations.keys.filterNot { it in currentIds }.toList().forEach { id ->
+        activeAnnotations[id]?.let { manager.removeViewAnnotation(it) }
+        activeAnnotations.remove(id)
+    }
+
+    overlays.forEach { overlay ->
+        val existingView = activeAnnotations[overlay.id]
+        val widthPx = overlay.widthDp.times(density)
+        val heightPx = overlay.heightDp.times(density)
+
+        if (existingView == null) {
+            val composeView =
+                ComposeView(mapView.context).apply {
+                    layoutParams =
+                        android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                        )
+                    setViewTreeLifecycleOwner(lifecycleOwner)
+                    setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
+                    if (parentCompositionContext != null) {
+                        setParentCompositionContext(parentCompositionContext)
+                    }
+                    setContent { overlay.content() }
+                }
+
+            manager.addViewAnnotation(
+                composeView,
+                viewAnnotationOptions {
+                    geometry(Point.fromLngLat(overlay.point.longitude, overlay.point.latitude))
+                    width(widthPx)
+                    height(heightPx)
+                    annotationAnchor { anchor(ViewAnnotationAnchor.TOP) }
+                    allowOverlap(true)
+                    allowOverlapWithPuck(true)
+                    visible(isVisible)
+                },
+            )
+            activeAnnotations[overlay.id] = composeView
+        } else {
+            existingView.setContent { overlay.content() }
+            manager.updateViewAnnotation(
+                existingView,
+                viewAnnotationOptions {
+                    geometry(Point.fromLngLat(overlay.point.longitude, overlay.point.latitude))
+                    width(widthPx)
+                    height(heightPx)
+                    allowOverlapWithPuck(true)
+                    visible(isVisible)
+                },
+            )
+        }
+    }
+}
+
+private fun updateAnnotationsVisibility(
+    manager: ViewAnnotationManager,
+    activeAnnotations: MutableMap<String, ComposeView>,
+    currentZoom: Double,
+    minZoom: Double,
+    maxZoom: Double,
+) {
+    val shouldBeVisible = currentZoom in minZoom..maxZoom
+    activeAnnotations.values.forEach { view ->
+        try {
+            manager.updateViewAnnotation(
+                view,
+                viewAnnotationOptions {
+                    visible(shouldBeVisible)
+                    allowOverlapWithPuck(true)
+                },
+            )
+        } catch (e: Exception) {
+            Logger.e(tag = "AndroidMap") { "Failed to update visibility: ${e.message}" }
         }
     }
 }
@@ -404,7 +542,7 @@ private fun buildMapView(
     onCameraPositionChanged: (Double, Double, Double) -> Unit,
     onMapReady: () -> Unit,
     onMapClick: ((GeographicPoint) -> Boolean)? = null,
-    onOverlayClick: (id: String) -> Unit,
+    onOverlayClick: (id: String, point: GeographicPoint) -> Unit,
     onUserInteraction: () -> Unit,
 ): MapView {
     MapboxOptions.accessToken = accessToken
@@ -566,7 +704,7 @@ private fun MapView.restoreTrackingMode(
 private fun registerGestureListeners(
     mapboxMap: MapboxMap,
     onMapClick: ((GeographicPoint) -> Boolean)?,
-    onOverlayClick: (id: String) -> Unit,
+    onOverlayClick: (id: String, point: GeographicPoint) -> Unit,
 ) {
     mapboxMap.addOnMapClickListener { point ->
         mapboxMap.queryRenderedFeatures(
@@ -589,7 +727,16 @@ private fun registerGestureListeners(
                         .getProperty(PROP_OVERLAY_ID)
                         ?.asString
                 if (overlayId != null) {
-                    onOverlayClick(overlayId)
+                    val geoPoint =
+                        GeographicPoint(
+                            latitude = point.latitude(),
+                            longitude = point.longitude(),
+                            altitude = mapboxMap.getElevation(point) ?: 0.0,
+                        )
+                    onOverlayClick(
+                        overlayId,
+                        geoPoint,
+                    )
                     return@queryRenderedFeatures
                 }
             }

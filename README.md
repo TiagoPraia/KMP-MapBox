@@ -5,6 +5,7 @@
 [![Mapbox Android](https://img.shields.io/badge/Mapbox%20Android-11.9.0-4264FB?logo=mapbox)](https://docs.mapbox.com/android/maps/)
 [![Mapbox GL JS](https://img.shields.io/badge/Mapbox%20GL%20JS-3.9.4-4264FB?logo=mapbox)](https://docs.mapbox.com/mapbox-gl-js/)
 [![Targets](https://img.shields.io/badge/Targets-Android%20%7C%20JS-8B5CF6)](#)
+[![Coverage](https://img.shields.io/badge/Implementation-Web%2070%25%20of%20Android-yellow)](#)
 [![License MIT](https://img.shields.io/badge/License-MIT-3B82F6)](./LICENSE)
 
 KMP-MapBox is a Kotlin Multiplatform library that instantiates the Map from MapBox libraries,
@@ -32,6 +33,8 @@ The map uses Fine Location, in Android, for user location, which will retrieve t
 value possible.
 The map also lets the user lock in its position, and lets the user put the camera in follow direction mode.
 
+One important note is that the Web target isn't as evolved as the Android one, simply because of the problems with the
+Composable/HTML and everything, JS works fine, but cover about 70% of the full implementation of Android.
 # Setup
 
 ---
