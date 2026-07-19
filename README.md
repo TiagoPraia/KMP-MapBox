@@ -50,7 +50,7 @@ If you need help configuring it, look at build.gradle.kts (:webApp).
 To set up the library you need to put in your build.gradle:
 
 ````kotlin
-implementation("io.github.tiagopraia:kmp-mapbox:0.3.6")
+implementation("io.github.tiagopraia:kmp-mapbox:0.3.8")
 ````
 
 or if using libs.versions.toml:
@@ -59,7 +59,7 @@ or if using libs.versions.toml:
     ````
     [versions]
     (...)
-    kmp-mapbox-version = 0.3.6
+    kmp-mapbox-version = 0.3.8
     
     [libraries]
     (...)
